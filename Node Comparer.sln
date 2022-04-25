@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32228.430
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9092AA53-FB77-4645-B42D-1CCCA6BD08BD}") = "Node Comparer", "Node Comparer\Node Comparer.njsproj", "{94F99195-0A84-41E9-9F98-E3194D540806}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{94F99195-0A84-41E9-9F98-E3194D540806}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{94F99195-0A84-41E9-9F98-E3194D540806}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{94F99195-0A84-41E9-9F98-E3194D540806}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{94F99195-0A84-41E9-9F98-E3194D540806}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8BE6A6C8-A5D3-413F-A6DF-DC425B8C2B80}
+	EndGlobalSection
+EndGlobal
