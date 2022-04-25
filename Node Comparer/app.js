@@ -41,9 +41,18 @@ function Compare(properties, driverItems) {
 
     for (var property in properties) {
         let key = property.toLowerCase();
+        let data = properties[property];
 
-        if (!driverItems.includes(key)) {
-            missingItems.push(property);
+        if (!driverItems.includes(key) || key == "videoforcedstandard") {
+            //missingItems.push(property);
+            missingItems.push({
+                name: property,
+                description: data.title,
+                type: data.dataType,
+                subtext: data.description,
+                discreets: data.enum,
+                labels: data.enumLabels
+            });
         }
     }
 
