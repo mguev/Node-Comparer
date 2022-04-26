@@ -1,6 +1,8 @@
 const fs = require('fs');
 const readline = require('readline');
 const path = require('path');
+const protocolMaker = require('../toolbox/protocolMaker');
+const { compileFunction } = require('vm');
 
 const questions = ['What is the path of the schema file?'];
 const encoding = { encoding: 'ascii', flag: 'r' };
@@ -13,27 +15,27 @@ let rl = readline.createInterface({
 
 let x = 0;
 let answers = [questions.length];
+let pathVariable = '';
 console.log('******Starting Progragm**********');
 console.log(questions[x]);
 
 rl.on('line', function (line) {
-    if (x == 0) {
-        answers[0] = path.join(...line.split('\\'));
-        answers[1] = path.join(...line.replace('schema', 'class').replace('.json', '.txt').split('\\'));
-    }
-    //console.log(questions[++x]);
-    //if (x >= questions.length) {
-    ProcessFile(answers[0], answers[1]);
+    ProcessFile(line);
     rl.close();
-    //}
 })
 
-function ProcessFile(filePath, secondFilePath) {
-    console.log('Reading file....');
+function ProcessFile(input) {
+
+    var filePath = path.join(...input.split('\\'));
+    var secondFilePath = path.join(...input.replace('schema', 'class').replace('.json', '.txt').split('\\'));
+    
     let data = fs.readFileSync(filePath, encoding);
     let secondData = fs.readFileSync(secondFilePath, encoding);
-   
-    Process(JSON.parse(data), JSON.parse(TransformClass(secondData)));
+    
+    var items = Process(JSON.parse(data), JSON.parse(TransformClass(secondData)));
+    
+    var xmlPath = path.join(...input.replace('schema', 'parameters').replace('.json', '.xml').split('\\'));
+    fs.writeFileSync(xmlPath, items.join('\n'));
 }
 
 function Compare(properties, driverItems) {
@@ -48,7 +50,7 @@ function Compare(properties, driverItems) {
             missingItems.push({
                 name: property,
                 description: data.title,
-                type: data.dataType,
+                type: data.enum == null ? data.dataType : data.dataType == 'string' ? 'discreet_strings' : 'discreet',
                 subtext: data.description,
                 discreets: data.enum,
                 labels: data.enumLabels
@@ -60,6 +62,7 @@ function Compare(properties, driverItems) {
 }
 
 function Process(apiJson, driverJson) {
+    console.log('Process');
     let driverItems = [];
     let noMissingItems = [];
 
@@ -67,6 +70,8 @@ function Process(apiJson, driverJson) {
         driverItems.push(driverProperty.toLowerCase());
     }
 
+    let categories = [];
+    console.log('1');
     for (let apiProperty in apiJson.properties) {
         try {
             let data = '';
@@ -78,10 +83,13 @@ function Process(apiJson, driverJson) {
             }
 
             let missingItems = Compare(data, driverItems);
+            let slParameters = protocolMaker(missingItems, 'SomeName', 1000);
             if (missingItems.length == 0)
                 noMissingItems.push(apiProperty);
-            else
-                console.log('Missing items', apiProperty, missingItems);
+            else{
+                categories.push(slParameters);
+                console.log('Missing items', apiProperty, slParameters);
+            }
         } catch (e) {
             console.log('API Property could not be process:', apiProperty);
             console.log(e);
@@ -89,6 +97,15 @@ function Process(apiJson, driverJson) {
     }
 
     console.log('No missing items: ', noMissingItems);
+    return categories;
+}
+
+function WriteToFile(content){
+    try{
+        fs.writeFileSync('', content);
+    } catch(err){
+        console.log('Error');
+    }
 }
 
 function TransformClass(data) {
