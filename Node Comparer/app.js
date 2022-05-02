@@ -3,8 +3,12 @@ const readline = require('readline');
 const path = require('path');
 const protocolMaker = require('../toolbox/protocolMaker');
 const { compileFunction } = require('vm');
+const { deepStrictEqual } = require('assert');
+const { start } = require('repl');
 
 const questions = ['What is the path of the schema file?'];
+const parameterQuestions = ['What is the parameter JSON?', 'Name the file that will hold all the parameters?'];
+
 const encoding = { encoding: 'ascii', flag: 'r' };
 
 let rl = readline.createInterface({
@@ -15,13 +19,78 @@ let rl = readline.createInterface({
 
 let x = 0;
 let answers = [questions.length];
-let pathVariable = '';
+let behavior = 'original';
+let startingPid = 0;
+
 console.log('******Starting Progragm**********');
-console.log(questions[x]);
+let myArguments = process.argv.slice(2);
+var inverse = myArguments.length > 0 && myArguments[0] == 'inverse';
+var original = myArguments.length > 0 && myArguments[0] == 'original';
+if(inverse){
+    console.log('***INVERSING***');
+    behavior = 'inverse';
+}
+
+if(myArguments.length > 1)
+        startingPid = parseInt(myArguments[1]);
+
+if (myArguments.length == 0 || inverse || original){
+    console.log(questions[x]);
+}
+else{
+    console.log(parameterQuestions[0]);
+}
 
 rl.on('line', function (line) {
-    ProcessFile(line);
-    rl.close();
+    console.log('Thank you!');
+    if (myArguments.length == 0 || inverse || original)
+    {
+        if(inverse)
+            behavior = 'inverse';
+
+        ProcessFile(line);
+        rl.close();
+    }
+    else if(x++ == 0){
+        answers[0] = line
+        console.log(parameterQuestions[x]);
+    }
+    else 
+    {
+        if(x == 2){
+            answers[1] = line;
+        }
+        else{
+            answers[0] = line;
+        }
+        const defaultFilePath = 'C:\\Users\\miguelgu\\Documents\\2.Jobs\\2021\\Tasks\\slParameters';
+        var converted = JSON.parse('{' + answers[0] + '}');
+
+        console.log('**Taken**');
+        for(var jObject in converted){
+            let data = converted[jObject];
+            // console.log(data);
+
+            var item = convertMissingItem(jObject, data);
+            var parameter = protocolMaker([item]);
+            if(x > 2){
+                console.log('***ENTERING');
+                var lines = parameter.split('\n');
+                lines.splice(0, 1);
+                parameter = lines.join('\n');
+            }
+
+            let filePath = defaultFilePath + '\\' + answers[1] + '.xml';
+            if(fs.existsSync(filePath)){
+                fs.appendFileSync(filePath, parameter)
+            }
+            else{
+                fs.writeFileSync(filePath, parameter);
+            }
+        }
+
+        console.log(parameterQuestions[0]);
+    }
 })
 
 function ProcessFile(input) {
@@ -34,8 +103,10 @@ function ProcessFile(input) {
     
     var items = Process(JSON.parse(data), JSON.parse(TransformClass(secondData)));
     
-    var xmlPath = path.join(...input.replace('schema', 'parameters').replace('.json', '.xml').split('\\'));
-    fs.writeFileSync(xmlPath, items.join('\n'));
+    if(items.length > 0){
+        var xmlPath = path.join(...input.replace('schema', 'parameters').replace('.json', '.xml').split('\\'));
+        fs.writeFileSync(xmlPath, items.join('\n'));
+    }
 }
 
 function Compare(properties, driverItems) {
@@ -45,24 +116,33 @@ function Compare(properties, driverItems) {
         let key = property.toLowerCase();
         let data = properties[property];
 
-        if (!driverItems.includes(key) || key == "videoforcedstandard") {
-            //missingItems.push(property);
-            missingItems.push({
-                name: property,
-                description: data.title,
-                type: data.enum == null ? data.dataType : data.dataType == 'string' ? 'discreet_strings' : 'discreet',
-                subtext: data.description,
-                discreets: data.enum,
-                labels: data.enumLabels
-            });
+        if(behavior == 'inverse'){
+            if(driverItems.includes(key))
+                missingItems.push(convertMissingItem(property, data));
+        }
+        else if (!driverItems.includes(key) || key == "videoforcedstandard") {
+            missingItems.push(convertMissingItem(property, data));
         }
     }
 
     return missingItems;
 }
 
+function convertMissingItem(property, data){
+    return {
+        name: property,
+        description: data.title,
+        type: data.enum == null || data.dataType == 'boolean' ? data.dataType : data.dataType == 'string' ? 'discreet_strings' : 'discreet',
+        subtext: data.description,
+        discreets: data.enum,
+        labels: data.enumLabels,
+        min: data.minimum,
+        max: data.maximum
+    };
+}
+
 function Process(apiJson, driverJson) {
-    console.log('Process');
+    console.log('*****COMPARING FILES*****');
     let driverItems = [];
     let noMissingItems = [];
 
@@ -71,7 +151,6 @@ function Process(apiJson, driverJson) {
     }
 
     let categories = [];
-    console.log('1');
     for (let apiProperty in apiJson.properties) {
         try {
             let data = '';
@@ -83,12 +162,17 @@ function Process(apiJson, driverJson) {
             }
 
             let missingItems = Compare(data, driverItems);
-            let slParameters = protocolMaker(missingItems, 'SomeName', 1000);
+            let slParameters = protocolMaker(missingItems, startingPid);
             if (missingItems.length == 0)
                 noMissingItems.push(apiProperty);
             else{
+                categories.push(apiProperty);
                 categories.push(slParameters);
-                console.log('Missing items', apiProperty, slParameters);
+                var classProperties = missingItems.map(
+                    x => CreateClassProperty(x.type, x.name));
+
+                console.log([apiProperty]);
+                console.log(classProperties.join('\n'));
             }
         } catch (e) {
             console.log('API Property could not be process:', apiProperty);
@@ -96,16 +180,13 @@ function Process(apiJson, driverJson) {
         }
     }
 
-    console.log('No missing items: ', noMissingItems);
+    console.log('\n----->Fields with no missing items: ', noMissingItems);
     return categories;
 }
 
-function WriteToFile(content){
-    try{
-        fs.writeFileSync('', content);
-    } catch(err){
-        console.log('Error');
-    }
+function CreateClassProperty(type, name){
+    let classType = type == 'boolean' ? 'bool' : type == 'string' ? 'string' : 'int'
+    return `public ${classType} ${name} { get; set; }`;
 }
 
 function TransformClass(data) {
