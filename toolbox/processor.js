@@ -202,7 +202,7 @@ class LineProcessor{
     parse(line){
         {
             console.log('~~~~~~~~~~~~~~~~');
-            if (this.arguments.length == 0 || inverse || original)
+            if (this.arguments.length == 0 || this.inverse || this.original)
             {
                 if(this.inverse)
                     this.behavior = 'inverse';
