@@ -1,5 +1,6 @@
 const xmlBuilder = require('xmlbuilder');
 
+//#region protocol maker class
 class ProtocolMaker{
     constructor(jsonArray, startingId){
         this.propertyList = jsonArray;
@@ -37,9 +38,15 @@ class ProtocolMaker{
 
             var interprete = xmlBuilder.create('Interprete');
             interprete.ele('RawType').text(
-                property.type == 'integer' || property.type == 'discreet' ? 'numeric text' : 'other');
+                property.type == 'integer' || property.type == 'discreet' || property.type == 'boolean' 
+                ? 'numeric text' 
+                : 'other');
+
             interprete.ele('Type').text(
-                property.type == 'integer' || property.type == 'discreet' ? 'double' : 'string');
+                property.type == 'integer' || property.type == 'discreet' || property.type == 'boolean'
+                ? 'double' 
+                : 'string');
+
             interprete.ele('LengthType').text('next param');
             param.importDocument(interprete);
 
@@ -116,6 +123,7 @@ class ProtocolMaker{
         return discreet;
     }
 }
+//#endregion
 
 ///Returns a single JSON object so that it can be run by the ProtocolMaker.
 module.exports = function convertMissingItem(property, data){
