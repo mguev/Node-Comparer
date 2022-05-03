@@ -5,7 +5,6 @@ console.log('******Starting Progragm**********');
 var processor = new LineProcessor(process.argv.slice(2));
 
 var question = processor.GetQuestion();
-console.log('Question is: ', question);
 if(question != '')
     console.log(question);
 
