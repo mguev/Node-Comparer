@@ -1,0 +1,8 @@
+[{
+    "name": "Example1",
+    "description": "Just an example",
+    "type": "discreet",
+    "subtext": "Full description",
+    "discreets": ["0", "1", "2"],
+    "labels": ["discreet1", "discreet2", "discreet3"]
+}]
